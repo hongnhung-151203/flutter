@@ -7,6 +7,7 @@ import RoomDetailPage from './components/RoomDetailPage';
 import RoleSwitcher from './components/RoleSwitcher';
 import { AppBar, Toolbar, Box } from '@mui/material';
 import FirebaseTest from "./components/FirebaseTest";
+import UserManagement from './components/UserManagement';
 
 const theme = createTheme({
     palette: {
@@ -68,15 +69,12 @@ function App() {
                 <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/room/:id" element={<RoomDetailPage />} />
+                    <Route path="/firebase-test" element={<FirebaseTest />} />
+                    <Route path="/users" element={<UserManagement />} />
                 </Routes>
             </Router>
         </ThemeProvider>
     );
 }
-<Routes>
-    <Route path="/" element={<HomePage />} />
-    <Route path="/room/:id" element={<RoomDetailPage />} />
-    <Route path="/firebase-test" element={<FirebaseTest />} />   {/* Thêm cái này */}
-</Routes>
 
 export default App;

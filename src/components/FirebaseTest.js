@@ -1,31 +1,18 @@
-import React, { useEffect, useState } from "react";
-import { getDatabase, ref, onValue } from "firebase/database";
-import app from "../services/firebase"; // file config Firebase của bạn
+import React from 'react';
+import { Box, Typography, Paper } from '@mui/material';
 
 export default function FirebaseTest() {
-    const [rooms, setRooms] = useState({});
-
-    useEffect(() => {
-        const db = getDatabase(app);
-        const roomRef = ref(db, "room");
-
-        onValue(roomRef, (snapshot) => {
-            const data = snapshot.val();
-            setRooms(data || {});
-        });
-    }, []);
-
     return (
-        <div style={{ padding: 20 }}>
-            <h2>Danh sách phòng</h2>
-            <ul>
-                {Object.entries(rooms).map(([key, room]) => (
-                    <li key={key}>
-                        <strong>{room.name}</strong> - {room.status} - {room.price} VND
-                        {room.tenant && ` (Người thuê: ${room.tenant})`}
-                    </li>
-                ))}
-            </ul>
-        </div>
+        <Box p={3}>
+            <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
+                Firebase Test
+            </Typography>
+
+            <Paper elevation={2} sx={{ p: 3 }}>
+                <Typography variant="body1" color="text.secondary">
+                    Tính năng Firebase sẽ được triển khai sau khi hệ thống cơ bản hoạt động ổn định.
+                </Typography>
+            </Paper>
+        </Box>
     );
 }

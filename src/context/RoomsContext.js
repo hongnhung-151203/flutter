@@ -6,6 +6,7 @@ import {
     deleteRoomById as deleteRoomCloud,
 } from '../services/roomsService';
 import { dbRealtime } from '../services/firebase';
+import { useAuth } from './AuthContext';
 
 const RoomsContext = createContext(null);
 
@@ -91,6 +92,7 @@ export const RoomsProvider = ({ children }) => {
     const [rooms, setRooms] = useState([]); // Khởi tạo rỗng, chờ Firebase
     const isCloudEnabled = Boolean(dbRealtime);
     const [hasCloudSnapshot, setHasCloudSnapshot] = useState(false);
+    const { role, tenantRoomId, canViewAllRooms, canViewOwnRoom } = useAuth();
 
     // Đảm bảo tất cả phòng đều có màu sắc
     const ensureRoomColors = (roomList) => {
@@ -146,6 +148,11 @@ export const RoomsProvider = ({ children }) => {
     }, [hasCloudSnapshot, rooms]);
 
     const addRoom = async (room) => {
+        // Kiểm tra quyền
+        if (role !== 'landlord') {
+            throw new Error('Chỉ chủ trọ mới có thể thêm phòng mới');
+        }
+
         // Đảm bảo phòng mới có đầy đủ thuộc tính
         const newRoom = {
             id: Date.now(),
@@ -173,6 +180,11 @@ export const RoomsProvider = ({ children }) => {
     };
 
     const deleteRoom = async (id) => {
+        // Kiểm tra quyền
+        if (role !== 'landlord') {
+            throw new Error('Chỉ chủ trọ mới có thể xóa phòng');
+        }
+
         if (isCloudEnabled) {
             try {
                 await deleteRoomCloud(String(id));
@@ -186,6 +198,18 @@ export const RoomsProvider = ({ children }) => {
     };
 
     const updateRoom = async (id, partial) => {
+        // Kiểm tra quyền
+        if (role === 'landlord') {
+            // Chủ trọ có thể cập nhật tất cả phòng
+        } else if (role === 'tenant') {
+            // Người thuê chỉ có thể cập nhật phòng của mình
+            if (String(tenantRoomId) !== String(id)) {
+                throw new Error('Bạn chỉ có thể cập nhật phòng của mình');
+            }
+        } else {
+            throw new Error('Bạn không có quyền cập nhật phòng');
+        }
+
         if (isCloudEnabled) {
             try {
                 await updateRoomCloud(String(id), partial);
@@ -198,15 +222,29 @@ export const RoomsProvider = ({ children }) => {
         }
     };
 
+    // Filter rooms based on user permissions
+    const filteredRooms = useMemo(() => {
+        if (canViewAllRooms) {
+            return rooms; // Landlord can see all rooms
+        } else if (canViewOwnRoom && tenantRoomId) {
+            return rooms.filter(room => String(room.id) === String(tenantRoomId)); // Tenant can only see their room
+        }
+        return []; // No access
+    }, [rooms, canViewAllRooms, canViewOwnRoom, tenantRoomId]);
+
     const value = useMemo(() => ({
-        rooms,
+        rooms: filteredRooms,
+        allRooms: rooms, // Keep access to all rooms for internal operations
         addRoom,
         deleteRoom,
         updateRoom,
         getRoomById: (id) => rooms.find((r) => String(r.id) === String(id)) || null,
         getOccupiedCount: () => rooms.filter((r) => r.status === 'Có người').length,
         getEmptyCount: () => rooms.filter((r) => r.status === 'Trống').length,
-    }), [rooms]);
+        canManageRooms: role === 'landlord',
+        canViewAllRooms,
+        canViewOwnRoom,
+    }), [filteredRooms, rooms, role, canViewAllRooms, canViewOwnRoom]);
 
     return (
         <RoomsContext.Provider value={value}>
