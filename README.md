@@ -476,6 +476,8 @@ Project ID: iot-smart-5700d
 Database URL: https://iot-smart-5700d-default-rtdb.firebaseio.com
 ```
 
+
+
 ---
 
 ## 📱 **Hướng dẫn sử dụng**
@@ -495,12 +497,11 @@ Database URL: https://iot-smart-5700d-default-rtdb.firebaseio.com
 
 ---
 
-> **💡 Lưu ý**: Đây là một dự án demo mô phỏng hệ thống IoT. Trong thực tế, cần tích hợp với các cảm biến IoT thật và thiết lập Firebase Security Rules phù hợp.
+ **💡 Lưu ý**: Đây là một dự án demo mô phỏng hệ thống IoT. Trong thực tế, cần tích hợp với các cảm biến IoT thật và thiết lập Firebase Security Rules phù hợp.
 
 **Phát triển bởi**: IoT Smart Team  
 **Phiên bản**: 1.0.0  
 **Cập nhật lần cuối**: September 2025
-```
 
 ---
 
