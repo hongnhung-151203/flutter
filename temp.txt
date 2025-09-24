@@ -1,0 +1,407 @@
+ extends StatelessWidget {
+  const _StatisticCard({
+    required this.title,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  final String title;
+  final String value;
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 16,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1C2534),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFF5C6774),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 24,
+          decoration: BoxDecoration(
+            color: _accentColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1C2534),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoomCard extends StatelessWidget {
+  const _RoomCard({required this.room, this.landlordActions});
+
+  final Room room;
+  final LandlordActions? landlordActions;
+
+  Color _statusColor() {
+    switch (_normalizedStatusKey(room.status)) {
+      case 'có ngu?i':
+        return _accentColor;
+      case 'bao tri':
+        return _warningColor;
+      default:
+        return const Color(0xFF9AA4B2);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final statusColor = _statusColor();
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pushNamed('/room/${room.id}'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: _surfaceColor,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x12000000),
+              blurRadius: 20,
+              offset: Offset(0, 12),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.home_outlined,
+                    color: statusColor,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        room.name,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1C2534),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Tr?ng thái: ${room.status}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF4C5968),
+                        ),
+                      ),
+                      if (room.occupant != null && room.occupant!.isNotEmpty)
+                        Text(
+                          'Ngu?i thuê: ${room.occupant!}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF4C5968),
+                          ),
+                        ),
+                      Text(
+                        'Giá thuê: ${room.price}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFF4C5968),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        room.status,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: statusColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (landlordActions != null) ...[
+                      const SizedBox(height: 8),
+                      PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'edit') landlordActions!.onEdit();
+                          if (value == 'delete') landlordActions!.onDelete();
+                        },
+                        itemBuilder: (context) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text('Ch?nh s?a'),
+                          ),
+                          PopupMenuItem(value: 'delete', child: Text('Xoá')),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _MetricChip(
+                  icon: Icons.thermostat,
+                  label: 'Nhi?t d? ${room.temperature}',
+                ),
+                _MetricChip(
+                  icon: Icons.local_fire_department_outlined,
+                  label: 'Gas ${room.gasLevel}%',
+                ),
+                _MetricChip(
+                  icon: Icons.water_drop_outlined,
+                  label: 'Ð? ?m ${room.humidity}%',
+                ),
+                _MetricChip(
+                  icon: room.lightOn
+                      ? Icons.lightbulb
+                      : Icons.lightbulb_outline,
+                  label: room.lightOn ? 'Ðèn b?t' : 'Ðèn t?t',
+                ),
+                _MetricChip(
+                  icon: room.fanOn ? Icons.toys : Icons.toys_outlined,
+                  label: room.fanOn ? 'Qu?t b?t' : 'Qu?t t?t',
+                ),
+                if (room.motionDetected)
+                  const _MetricChip(icon: Icons.sensors, label: 'Chuy?n d?ng'),
+                if (room.gasAlert)
+                  const _MetricChip(
+                    icon: Icons.warning_amber_rounded,
+                    label: 'C?nh báo gas',
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyStateCard extends StatelessWidget {
+  const _EmptyStateCard({required this.isTenant});
+
+  final bool isTenant;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 20,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isTenant
+                ? Icons.meeting_room_outlined
+                : Icons.add_home_work_outlined,
+            size: 54,
+            color: _accentColor,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isTenant
+                ? 'B?n chua du?c gán phòng. Vui lòng liên h? ch? tr?.'
+                : 'Chua có phòng nào. Vui lòng thêm phòng m?i.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: const Color(0xFF4C5968),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SliderTile extends StatelessWidget {
+  const _SliderTile({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: theme.textTheme.bodyMedium),
+            Text('$value%', style: theme.textTheme.bodyMedium),
+          ],
+        ),
+        Slider(
+          min: 0,
+          max: 100,
+          divisions: 20,
+          value: value.toDouble(),
+          activeColor: _accentColor,
+          onChanged: (v) => onChanged(v.round()),
+        ),
+      ],
+    );
+  }
+}
+
+class _SwitchTile extends StatelessWidget {
+  const _SwitchTile({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      value: value,
+      onChanged: onChanged,
+      title: Text(label),
+      contentPadding: EdgeInsets.zero,
+      activeColor: _accentColor,
+    );
+  }
+}
+
+class _MetricChip extends StatelessWidget {
+  const _MetricChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE3E7ED)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF4C5968)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF4C5968),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
