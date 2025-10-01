@@ -40,4 +40,39 @@ class FirebaseService {
       }
     }
   }
+
+  /// Tạo userId dạng user_001, user_002, ...
+  static Future<String> generateNextUserId() async {
+    final ref = _database!.ref('users');
+    final snapshot = await ref.get();
+    int maxIndex = 0;
+    if (snapshot.exists) {
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      for (var key in data.keys) {
+        final match = RegExp(r'user_(\d{3})').firstMatch(key.toString());
+        if (match != null) {
+          final num = int.tryParse(match.group(1)!);
+          if (num != null && num > maxIndex) maxIndex = num;
+        }
+      }
+    }
+    final nextIndex = maxIndex + 1;
+    return 'user_${nextIndex.toString().padLeft(3, '0')}';
+  }
+
+  /// Đổi tất cả user id cũ sang dạng user_00x (tăng dần theo thứ tự)
+  static Future<void> migrateUserIds() async {
+    final ref = _database!.ref('users');
+    final snapshot = await ref.get();
+    if (snapshot.exists) {
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      int index = 1;
+      for (var oldKey in data.keys) {
+        final newKey = 'user_${index.toString().padLeft(3, '0')}';
+        await ref.child(newKey).set(data[oldKey]);
+        await ref.child(oldKey).remove();
+        index++;
+      }
+    }
+  }
 }

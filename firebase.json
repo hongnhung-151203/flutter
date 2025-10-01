@@ -1,1 +1,25 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"iot-smart-5700d","appId":"1:730556087229:android:34143b0dedd5a7c480f0d4","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"iot-smart-5700d","configurations":{"android":"1:730556087229:android:34143b0dedd5a7c480f0d4","ios":"1:730556087229:ios:091f441cd438eedf80f0d4","macos":"1:730556087229:ios:091f441cd438eedf80f0d4","web":"1:730556087229:web:34ab2aaa7810a98680f0d4","windows":"1:730556087229:web:8f9c191f1f8623f680f0d4"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "iot-smart-001",
+          "appId": "1:730556087229:android:34143b0dedd5a7c480f0d4",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "iot-smart-001",
+          "configurations": {
+            "android": "1:730556087229:android:34143b0dedd5a7c480f0d4",
+            "ios": "1:730556087229:ios:091f441cd438eedf80f0d4",
+            "macos": "1:730556087229:ios:091f441cd438eedf80f0d4",
+            "web": "1:730556087229:web:34ab2aaa7810a98680f0d4",
+            "windows": "1:730556087229:web:8f9c191f1f8623f680f0d4"
+          }
+        }
+      }
+    }
+  }
+}

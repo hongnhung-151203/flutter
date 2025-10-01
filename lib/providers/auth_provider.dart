@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_profile.dart';
+import '../services/firebase_service.dart'; // Thêm dòng này vào đầu file
 
 class AuthProvider extends ChangeNotifier {
   AuthProvider(this._database);
@@ -364,8 +365,14 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
+      // SỬA ĐOẠN NÀY: Lấy id mới dạng user_00x
+      String newUserId = 'user_${DateTime.now().millisecondsSinceEpoch}';
+      if (_database != null && _isOnline) {
+        newUserId = await FirebaseService.generateNextUserId();
+      }
+
       final profile = UserProfile(
-        id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+        id: newUserId,
         email: email.trim().toLowerCase(),
         name: name.trim(),
         role: role,
@@ -680,5 +687,43 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Khôi phục lại 3 user mẫu user_001, user_002, user_003 (rút gọn)
+  Future<void> restoreDefaultUsers() async {
+    if (_database != null) {
+      final usersRef = _database!.ref('users');
+      final defaultUsers = [
+        {
+          'id': 'user_001',
+          'email': 'landlord@example.com',
+          'name': 'Nguyen Van Chu',
+          'role': 'landlord',
+          'roomId': null,
+        },
+        {
+          'id': 'user_002',
+          'email': 'tenant@example.com',
+          'name': 'Nguyen Van A',
+          'role': 'tenant',
+          'roomId': '101',
+        },
+        {
+          'id': 'user_003',
+          'email': 'tenant2@example.com',
+          'name': 'Tran Thi B',
+          'role': 'tenant',
+          'roomId': '103',
+        },
+      ];
+      for (final user in defaultUsers) {
+        await usersRef.child(user['id']!).set({
+          ...user,
+          'password': '123456',
+          'status': 'active',
+          'createdAt': DateTime.now().toIso8601String(),
+        });
+      }
+    }
   }
 }

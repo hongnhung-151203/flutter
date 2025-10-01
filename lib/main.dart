@@ -16,7 +16,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FirebaseService.initialise();
 
-  // Debug Firebase connection
+  // Nếu muốn khôi phục user mẫu, giữ dòng này. Nếu không cần, hãy xóa/comment lại.
+  // await FirebaseService.migrateUserIds(); // XÓA dòng này nếu đã chuyển đổi id cũ rồi
+  // await authProvider.restoreDefaultUsers(); // XÓA hoặc COMMENT dòng này sau khi đã khôi phục user mẫu
+
   await debugFirebase();
 
   final authProvider = AuthProvider(FirebaseService.database);
