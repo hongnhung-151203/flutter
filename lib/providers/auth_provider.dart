@@ -376,7 +376,7 @@ class AuthProvider extends ChangeNotifier {
         email: email.trim().toLowerCase(),
         name: name.trim(),
         role: role,
-        roomId: role == UserRole.tenant ? '101' : null,
+        roomId: null,
         createdAt: DateTime.now(),
         password: password,
         status: 'active',
@@ -562,14 +562,6 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // Check if room is already occupied by another user
-      if (roomId != null && roomId.isNotEmpty) {
-        if (_users.any((u) => u.roomId == roomId && u.id != userId)) {
-          _error = 'Phòng $roomId đã có người ở.';
-          return false;
-        }
-      }
-
       // Update user with new room assignment
       final updatedUser = user.copyWith(roomId: roomId);
 
@@ -713,7 +705,7 @@ class AuthProvider extends ChangeNotifier {
           'email': 'tenant2@example.com',
           'name': 'Tran Thi B',
           'role': 'tenant',
-          'roomId': '103',
+          'roomId': '102',
         },
       ];
       for (final user in defaultUsers) {

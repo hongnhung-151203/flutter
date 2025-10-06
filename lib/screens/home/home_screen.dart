@@ -128,57 +128,62 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF8E2DE2), // Purple
-              Color(0xFF4A00E0), // Blue
-              Color(0xFF92FE9D), // Green
-            ],
-            stops: [0.0, 0.6, 1.0],
+          image: DecorationImage(
+            image: AssetImage('assets/may.jpg'), // 🖼️ đường dẫn tới ảnh
+            fit: BoxFit.cover,
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // Custom App Bar
               _buildCustomAppBar(context, auth, theme),
-
-              // Content
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: roomsProvider.bootstrap,
                   displacement: 24,
-                  child: ListView(
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                    children: [
-                      _buildWelcomeHeader(context, auth),
-                      const SizedBox(height: 20),
-                      _buildSummaryRow(context, roomsProvider.rooms),
-                      const SizedBox(height: 28),
-                      const _SectionTitle(title: 'Danh sách phòng'),
-                      const SizedBox(height: 12),
-                      if (rooms.isEmpty)
-                        _EmptyStateCard(isTenant: auth.isTenant)
-                      else
-                        ...rooms.map(
-                          (room) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _RoomCard(
-                              room: room,
-                              landlordActions: auth.isLandlord
-                                  ? LandlordActions(
-                                      onEdit: () =>
-                                          _openRoomDialog(context, room: room),
-                                      onDelete: () =>
-                                          _confirmDelete(context, room),
-                                    )
-                                  : null,
-                            ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSummaryRow(context, roomsProvider.rooms, auth),
+                        const SizedBox(height: 28),
+                        const _SectionTitle(title: 'Danh sách phòng'),
+                        const SizedBox(height: 12),
+
+                        if (rooms.isEmpty)
+                          _EmptyStateCard(isTenant: auth.isTenant)
+                        else
+                          GridView.count(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 2.9, // Điều chỉnh cho vừa ý
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            children: rooms.map((room) {
+                              return SizedBox(
+                                height:
+                                    260, // 👈 Đảm bảo các card có cùng chiều cao
+                                child: _RoomCard(
+                                  room: room,
+                                  landlordActions: auth.isLandlord
+                                      ? LandlordActions(
+                                          onEdit: () => _openRoomDialog(
+                                            context,
+                                            room: room,
+                                          ),
+                                          onDelete: () =>
+                                              _confirmDelete(context, room),
+                                        )
+                                      : null,
+                                ),
+                              );
+                            }).toList(),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -207,10 +212,14 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      decoration: const BoxDecoration(
+        color: Color.fromARGB(255, 2, 86, 164),
+        border: Border(bottom: BorderSide(color: Colors.white24, width: 1)),
+      ),
       child: Row(
         children: [
           Text(
-            'Quản lý nhà trọ',
+            'Quản Lý Nhà Trọ IoT',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -265,83 +274,58 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildWelcomeHeader(BuildContext context, AuthProvider auth) {
+  Widget _UserSummaryCard(BuildContext context, AuthProvider auth) {
     final theme = Theme.of(context);
-    final subtitle = auth.isLandlord
-        ? 'Bạn là chủ trọ. Bạn có thể quản lý tất cả phòng.'
-        : 'Bạn là người thuê. Bạn chỉ xem được phòng của mình.';
+    final subtitle = auth.isLandlord ? 'Chủ Trọ' : 'Người thuê';
 
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        image: const DecorationImage(
+          image: AssetImage('assets/nenmay.jpg'),
+          fit: BoxFit.cover,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF667eea).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           CircleAvatar(
-            radius: 32,
-            backgroundColor: Colors.white.withValues(alpha: 0.2),
+            radius: 24,
+            backgroundColor: const Color.fromARGB(
+              255,
+              0,
+              0,
+              0,
+            ).withOpacity(0.2),
             child: Text(
               auth.currentUser?.name.substring(0, 1).toUpperCase() ?? '?',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: const Color.fromARGB(255, 0, 0, 0),
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  auth.currentUser?.name ?? 'Khách',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
-                ),
-                if (auth.currentUser?.roomId != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      'Phòng ${auth.currentUser!.roomId}',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: Colors.white,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+          const SizedBox(height: 12),
+          Text(
+            auth.currentUser?.name ?? 'Khách',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: const Color.fromARGB(255, 0, 0, 0),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.9),
             ),
           ),
         ],
@@ -349,39 +333,71 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSummaryRow(BuildContext context, List<Room> rooms) {
+  Widget _buildSummaryRow(
+    BuildContext context,
+    List<Room> rooms,
+    AuthProvider auth,
+  ) {
     final occupied = rooms.where((room) => room.isOccupied).length;
     final alerts = rooms
         .where((room) => room.gasAlert || room.motionDetected)
         .length;
-    final available = rooms.length - occupied;
+    final total = rooms.length;
+    final available = total - occupied;
 
     return Row(
       children: [
-        Expanded(
-          child: _StatisticCard(
-            title: 'Đang sử dụng',
-            value: '$occupied',
-            color: _accentColor,
-            icon: Icons.home_work_outlined,
-          ),
-        ),
+        // Ô "Bạn là chủ" hoặc "Người thuê"
+        Expanded(flex: 2, child: _UserSummaryCard(context, auth)),
+
+        // ✅ Thêm khoảng cách giữa user card và thống kê
         const SizedBox(width: 12),
+
+        // 4 ô thống kê còn lại
         Expanded(
-          child: _StatisticCard(
-            title: 'Còn trống',
-            value: '$available',
-            color: _warningColor,
-            icon: Icons.event_available_outlined,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatisticCard(
-            title: 'Cần chú ý',
-            value: '$alerts',
-            color: _dangerColor,
-            icon: Icons.warning_amber_rounded,
+          flex: 8, // 2 + 2 + 2 + 2
+          child: Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: _StatisticCard(
+                  title: 'Tổng phòng',
+                  value: '$total',
+                  color: Colors.cyan, // bạn có thể chỉnh lại màu theo ý thích
+                  icon: Icons.meeting_room_outlined,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: _StatisticCard(
+                  title: 'Đang sử dụng',
+                  value: '$occupied',
+                  color: _accentColor,
+                  icon: Icons.home_work_outlined,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: _StatisticCard(
+                  title: 'Còn trống',
+                  value: '$available',
+                  color: _warningColor,
+                  icon: Icons.event_available_outlined,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: _StatisticCard(
+                  title: 'Cần chú ý',
+                  value: '$alerts',
+                  color: _dangerColor,
+                  icon: Icons.warning_amber_rounded,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -795,13 +811,23 @@ class _RoomCard extends StatelessWidget {
 
   Color _statusColor() {
     switch (_normalizedStatusKey(room.status)) {
-      case 'có người':
-        return _accentColor;
-      case 'bảo trì':
-        return _warningColor;
+      case 'trong':
+        return Colors.grey;
+      case 'co nguoi':
+        return Colors.green;
+      case 'bao tri':
+        return Colors.orange;
       default:
         return const Color(0xFF9AA4B2);
     }
+  }
+
+  Color _metricColorByValue(num value) {
+    return value < 50 ? Colors.green : Colors.red;
+  }
+
+  Color _booleanMetricColor(bool active) {
+    return active ? Colors.red : Colors.green;
   }
 
   @override
@@ -901,7 +927,7 @@ class _RoomCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.12),
+                        color: statusColor.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -932,40 +958,57 @@ class _RoomCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 30),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
                 _MetricChip(
                   icon: Icons.thermostat,
-                  label: 'Nhiệt độ ${room.temperature}',
+                  label: 'Nhiệt độ ${room.temperature}°C',
+                  color: _metricColorByValue(
+                    room.temperature is num
+                        ? room.temperature as num
+                        : num.tryParse(room.temperature.toString()) ?? 0,
+                  ),
                 ),
                 _MetricChip(
                   icon: Icons.local_fire_department_outlined,
                   label: 'Gas ${room.gasLevel}%',
+                  color: _metricColorByValue(
+                    room.gasLevel is num
+                        ? room.gasLevel as num
+                        : num.tryParse(room.gasLevel.toString()) ?? 0,
+                  ),
                 ),
                 _MetricChip(
                   icon: Icons.water_drop_outlined,
                   label: 'Độ ẩm ${room.humidity}%',
+                  color: _metricColorByValue(
+                    room.humidity is num
+                        ? room.humidity as num
+                        : num.tryParse(room.humidity.toString()) ?? 0,
+                  ),
                 ),
                 _MetricChip(
                   icon: room.lightOn
                       ? Icons.lightbulb
                       : Icons.lightbulb_outline,
                   label: room.lightOn ? 'Đèn bật' : 'Đèn tắt',
+                  color: _booleanMetricColor(room.lightOn),
                 ),
                 _MetricChip(
-                  icon: room.fanOn ? Icons.toys : Icons.toys_outlined,
-                  label: room.fanOn ? 'Quạt bật' : 'Quạt tắt',
+                  icon: Icons.sensors,
+                  label: room.motionDetected
+                      ? 'Phát hiện chuyển động'
+                      : 'Không có chuyển động',
+                  color: _booleanMetricColor(room.motionDetected),
                 ),
-                if (room.motionDetected)
-                  const _MetricChip(icon: Icons.sensors, label: 'Chuyển động'),
-                if (room.gasAlert)
-                  const _MetricChip(
-                    icon: Icons.warning_amber_rounded,
-                    label: 'Cảnh báo gas',
-                  ),
+                _MetricChip(
+                  icon: Icons.warning_amber_rounded,
+                  label: room.gasAlert ? 'Cảnh báo gas' : 'Gas an toàn',
+                  color: _booleanMetricColor(room.gasAlert),
+                ),
               ],
             ),
           ],
@@ -1105,13 +1148,16 @@ class _SwitchTile extends StatelessWidget {
 }
 
 class _MetricChip extends StatelessWidget {
-  const _MetricChip({required this.icon, required this.label});
+  const _MetricChip({required this.icon, required this.label, this.color});
 
   final IconData icon;
   final String label;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? const Color(0xFF4C5968);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -1122,12 +1168,12 @@ class _MetricChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF4C5968)),
+          Icon(icon, size: 18, color: effectiveColor), // dùng màu dynamic
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF4C5968),
+            style: TextStyle(
+              color: effectiveColor, // dùng màu dynamic
               fontWeight: FontWeight.w500,
             ),
           ),

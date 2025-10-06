@@ -16,6 +16,16 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  // ✅ Hàm chia danh sách user thành nhóm 2 người
+  List<List<UserProfile>> chunkUsers(List<UserProfile> users, int chunkSize) {
+    final chunks = <List<UserProfile>>[];
+    for (var i = 0; i < users.length; i += chunkSize) {
+      final end = (i + chunkSize < users.length) ? i + chunkSize : users.length;
+      chunks.add(users.sublist(i, end));
+    }
+    return chunks;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -37,9 +47,35 @@ class _UserManagementScreenState extends State<UserManagementScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quản lý người dùng'),
+        backgroundColor: const Color.fromARGB(
+          255,
+          2,
+          86,
+          164,
+        ), // 💙 Màu nền theo yêu cầu
+        title: const Text(
+          'Quản lý người dùng',
+          style: TextStyle(
+            fontWeight: FontWeight.bold, // Làm đậm chữ
+            fontSize: 18,
+            color: Color.fromARGB(
+              255,
+              236,
+              235,
+              235,
+            ), // 👈 Cho chữ trắng để nổi bật trên nền xanh
+          ),
+        ),
         bottom: TabBar(
           controller: _tabController,
+          labelColor: Color.fromARGB(
+            255,
+            87,
+            242,
+            136,
+          ), // Màu xanh cho tab được chọn
+          unselectedLabelColor: Colors.grey, // Màu xám cho tab không chọn
+          indicatorColor: Color.fromARGB(255, 87, 242, 136),
           tabs: const [
             Tab(icon: Icon(Icons.people), text: 'Tất cả'),
             Tab(icon: Icon(Icons.meeting_room), text: 'Đã có phòng'),
@@ -48,7 +84,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(
+              Icons.refresh,
+              color: Colors.white,
+            ), // 👈 icon trắng
             onPressed: () {
               context.read<AuthProvider>().refreshUsers();
             },
@@ -56,106 +95,151 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           ),
         ],
       ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          if (authProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
 
-          if (!authProvider.isAuthenticated || !authProvider.isLandlord) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Chức năng này chỉ dành cho chủ trọ.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            );
-          }
+      body: Stack(
+        children: [
+          // 👉 Hình nền phía sau
+          Positioned.fill(
+            child: Image.asset(
+              'assets/may.jpg',
+              fit: BoxFit.cover, // hoặc BoxFit.fill nếu muốn full
+            ),
+          ),
 
-          return Column(
-            children: [
-              // Status Card
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: authProvider.isOnline
-                        ? [Colors.green[50]!, Colors.green[100]!]
-                        : [Colors.orange[50]!, Colors.orange[100]!],
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              if (authProvider.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (!authProvider.isAuthenticated || !authProvider.isLandlord) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Chức năng này chỉ dành cho chủ trọ.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
+                );
+              }
+
+              return Column(
+                children: [
+                  // Gộp Status Card và Current User Card trên cùng một hàng
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        // Khung 1 - Status Card
+                        Expanded(
+                          flex: 5,
+                          child: _buildUserCard(
+                            authProvider.currentUser!,
+                            authProvider,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Khung 2 - Current User Card
+                        Expanded(
+                          flex: 5,
+                          child: _buildStatusCard(authProvider),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Tab Views
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildAllUsersTab(authProvider),
+                        _buildAssignedUsersTab(authProvider),
+                        _buildUnassignedUsersTab(authProvider),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusCard(AuthProvider authProvider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      constraints: const BoxConstraints(minHeight: 120),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: authProvider.isOnline
+              ? [Colors.green[50]!, Colors.green[100]!]
+              : [Colors.orange[50]!, Colors.orange[100]!],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: authProvider.isOnline
+              ? Colors.green[200]!
+              : Colors.orange[200]!,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            authProvider.isOnline ? Icons.cloud_done : Icons.cloud_off,
+            color: authProvider.isOnline
+                ? Colors.green[700]
+                : Colors.orange[700],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  authProvider.isOnline ? 'Kết nối Firebase' : 'Dữ liệu cục bộ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
                     color: authProvider.isOnline
-                        ? Colors.green[200]!
-                        : Colors.orange[200]!,
+                        ? Colors.green[700]
+                        : Colors.orange[700],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      authProvider.isOnline
-                          ? Icons.cloud_done
-                          : Icons.cloud_off,
-                      color: authProvider.isOnline
-                          ? Colors.green[700]
-                          : Colors.orange[700],
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            authProvider.isOnline
-                                ? 'Kết nối Firebase'
-                                : 'Dữ liệu cục bộ',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: authProvider.isOnline
-                                  ? Colors.green[700]
-                                  : Colors.orange[700],
-                            ),
-                          ),
-                          Text(
-                            '${authProvider.users.length} người dùng • ${authProvider.getAssignedTenants().length} đã có phòng • ${authProvider.getUnassignedTenants().length} chưa có phòng',
-                            style: TextStyle(
-                              color: authProvider.isOnline
-                                  ? Colors.green[600]
-                                  : Colors.orange[600],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                Text(
+                  '${authProvider.users.length} người dùng • ${authProvider.getAssignedTenants().length} đã có phòng • ${authProvider.getUnassignedTenants().length} chưa có phòng',
+                  style: TextStyle(
+                    color: authProvider.isOnline
+                        ? Colors.green[600]
+                        : Colors.orange[600],
+                    fontSize: 12,
+                  ),
                 ),
-              ),
-
-              // Tab Views
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildAllUsersTab(authProvider),
-                    _buildAssignedUsersTab(authProvider),
-                    _buildUnassignedUsersTab(authProvider),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAllUsersTab(AuthProvider authProvider) {
-    return authProvider.users.isEmpty
+    final seenIds = <String>{};
+    final currentUserId = authProvider.currentUser?.id;
+
+    final filteredUsers = authProvider.users.where((user) {
+      if (user.id == currentUserId) return false;
+      if (seenIds.contains(user.id)) return false;
+      seenIds.add(user.id);
+      return true;
+    }).toList();
+
+    final userChunks = chunkUsers(filteredUsers, 2); // chia mỗi hàng 2 người
+
+    return filteredUsers.isEmpty
         ? const Center(
             child: Text(
               'Chưa có người dùng nào',
@@ -163,17 +247,35 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             ),
           )
         : ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: authProvider.users.length,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: userChunks.length,
             itemBuilder: (context, index) {
-              final user = authProvider.users[index];
-              return _buildUserCard(user, authProvider);
+              final chunk = userChunks[index];
+              return Row(
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: _buildUserCard(chunk[0], authProvider),
+                  ),
+                  const SizedBox(width: 12),
+                  if (chunk.length > 1)
+                    Expanded(
+                      flex: 5,
+                      child: _buildUserCard(chunk[1], authProvider),
+                    )
+                  else
+                    const Spacer(
+                      flex: 5,
+                    ), // để cân layout nếu chỉ có 1 thẻ cuối
+                ],
+              );
             },
           );
   }
 
   Widget _buildAssignedUsersTab(AuthProvider authProvider) {
     final assignedTenants = authProvider.getAssignedTenants();
+    final userChunks = chunkUsers(assignedTenants, 2);
 
     return assignedTenants.isEmpty
         ? const Center(
@@ -183,17 +285,36 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             ),
           )
         : ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: assignedTenants.length,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: userChunks.length,
             itemBuilder: (context, index) {
-              final user = assignedTenants[index];
-              return _buildUserCard(user, authProvider);
+              final chunk = userChunks[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: _buildUserCard(chunk[0], authProvider),
+                    ),
+                    const SizedBox(width: 12),
+                    if (chunk.length > 1)
+                      Expanded(
+                        flex: 5,
+                        child: _buildUserCard(chunk[1], authProvider),
+                      )
+                    else
+                      const Spacer(flex: 5),
+                  ],
+                ),
+              );
             },
           );
   }
 
   Widget _buildUnassignedUsersTab(AuthProvider authProvider) {
     final unassignedTenants = authProvider.getUnassignedTenants();
+    final userChunks = chunkUsers(unassignedTenants, 2);
 
     return unassignedTenants.isEmpty
         ? const Center(
@@ -203,14 +324,36 @@ class _UserManagementScreenState extends State<UserManagementScreen>
             ),
           )
         : ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: unassignedTenants.length,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: userChunks.length,
             itemBuilder: (context, index) {
-              final user = unassignedTenants[index];
-              return _buildUserCard(
-                user,
-                authProvider,
-                showRoomAssignment: true,
+              final chunk = userChunks[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: _buildUserCard(
+                        chunk[0],
+                        authProvider,
+                        showRoomAssignment: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    if (chunk.length > 1)
+                      Expanded(
+                        flex: 5,
+                        child: _buildUserCard(
+                          chunk[1],
+                          authProvider,
+                          showRoomAssignment: true,
+                        ),
+                      )
+                    else
+                      const Spacer(flex: 5),
+                  ],
+                ),
               );
             },
           );
@@ -298,35 +441,35 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 ),
               ],
             ),
+
             const SizedBox(height: 12),
-            Row(
+
+            // ✅ SỬA TẠI ĐÂY: dùng Wrap thay vì Row + Expanded
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
               children: [
-                Expanded(
-                  child: _buildInfoChip(
-                    icon: Icons.shield_outlined,
-                    label: user.role == UserRole.landlord
-                        ? 'Chủ trọ'
-                        : 'Người thuê',
-                    color: roleColor,
-                  ),
+                _buildInfoChip(
+                  icon: Icons.shield_outlined,
+                  label: user.role == UserRole.landlord
+                      ? 'Chủ trọ'
+                      : 'Người thuê',
+                  color: roleColor,
                 ),
                 if (user.roomId != null)
-                  Expanded(
-                    child: _buildInfoChip(
-                      icon: Icons.meeting_room,
-                      label: 'Phòng ${user.roomId}',
-                      color: Colors.purple,
-                    ),
+                  _buildInfoChip(
+                    icon: Icons.meeting_room,
+                    label: '${user.roomId}',
+                    color: Colors.purple,
                   ),
-                Expanded(
-                  child: _buildInfoChip(
-                    icon: Icons.circle,
-                    label: user.status,
-                    color: user.status == 'active' ? Colors.green : Colors.red,
-                  ),
+                _buildInfoChip(
+                  icon: Icons.circle,
+                  label: user.status == 'active' ? 'Hoạt động' : 'Bị khóa',
+                  color: user.status == 'active' ? Colors.green : Colors.red,
                 ),
               ],
             ),
+
             if (user.createdAt != null) ...[
               const SizedBox(height: 8),
               Text(
@@ -334,9 +477,10 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),
             ],
+
             if (showRoomAssignment &&
                 user.role == UserRole.tenant &&
-                user.roomId == null) ...[
+                (user.roomId == null || user.roomId!.isEmpty)) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
@@ -366,7 +510,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 child: ElevatedButton.icon(
                   onPressed: () => _showUnassignRoomDialog(user, authProvider),
                   icon: const Icon(Icons.meeting_room_outlined),
-                  label: Text('Bỏ gán phòng ${user.roomId}'),
+                  label: Text('Bỏ gán ${user.roomId}'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange[50],
                     foregroundColor: Colors.orange[700],
@@ -391,23 +535,23 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     required MaterialColor color,
   }) {
     return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color[50],
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: color[200]!),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color[700]),
-          const SizedBox(width: 4),
+          Icon(icon, size: 12, color: color[700]),
+          const SizedBox(width: 3),
           Flexible(
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 color: color[700],
                 fontWeight: FontWeight.w500,
               ),
@@ -427,12 +571,6 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     final roomController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    // Get list of occupied rooms for validation
-    final occupiedRooms = authProvider.users
-        .where((u) => u.roomId != null && u.roomId!.isNotEmpty)
-        .map((u) => u.roomId!)
-        .toSet();
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -450,91 +588,90 @@ class _UserManagementScreenState extends State<UserManagementScreen>
         ),
         content: Form(
           key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Email: ${user.email}',
-                style: TextStyle(color: Colors.grey[600], fontSize: 14),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Nhập số phòng hoặc ID phòng:',
-                style: TextStyle(
-                  color: Colors.grey[700],
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: roomController,
-                decoration: InputDecoration(
-                  hintText: 'Ví dụ: 101, A01, B-205...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  prefixIcon: const Icon(Icons.meeting_room_outlined),
-                  suffixIcon: roomController.text.isNotEmpty
-                      ? occupiedRooms.contains(roomController.text.trim())
-                            ? Icon(Icons.warning, color: Colors.orange[600])
-                            : Icon(Icons.check_circle, color: Colors.green[600])
-                      : null,
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Vui lòng nhập số phòng';
-                  }
-                  if (occupiedRooms.contains(value.trim())) {
-                    return 'Phòng này đã có người ở!';
-                  }
-                  return null;
-                },
-                autofocus: true,
-                onChanged: (value) {
-                  // Validation will update dynamically
-                },
-                onFieldSubmitted: (value) {
-                  if (formKey.currentState!.validate()) {
-                    _assignRoom(user, value.trim(), authProvider);
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue[200]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, size: 16, color: Colors.blue[600]),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Phòng sẽ được tạo tự động nếu chưa tồn tại',
-                        style: TextStyle(color: Colors.blue[700], fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (occupiedRooms.isNotEmpty) ...[
-                const SizedBox(height: 8),
+          child: StatefulBuilder(
+            builder: (context, setState) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  'Phòng đã có người: ${occupiedRooms.join(', ')}',
+                  'Email: ${user.email}',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Nhập số Phòng :',
                   style: TextStyle(
-                    color: Colors.orange[600],
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
+                    color: Colors.grey[700],
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: roomController,
+                  decoration: InputDecoration(
+                    prefixText: 'Phòng ',
+                    hintText: 'Ví dụ: 101, 102 ...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    prefixIcon: const Icon(Icons.meeting_room_outlined),
+                    suffixIcon: roomController.text.isNotEmpty
+                        ? Icon(Icons.check_circle, color: Colors.green[600])
+                        : null,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Vui lòng nhập số phòng';
+                    }
+                    final trimmed = value.trim();
+                    if (!RegExp(r'^\d+$').hasMatch(trimmed)) {
+                      return 'Vui lòng chỉ nhập số phòng (vd: 101)';
+                    }
+                    return null;
+                  },
+                  autofocus: true,
+                  onChanged: (value) {
+                    setState(() {}); // cập nhật suffixIcon
+                  },
+                  onFieldSubmitted: (value) {
+                    if (formKey.currentState!.validate()) {
+                      final fullRoomId = 'Phòng ${value.trim()}';
+                      _assignRoom(user, fullRoomId, authProvider);
+                      Navigator.of(context).pop();
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Colors.blue[600],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Phòng sẽ được tạo tự động nếu chưa tồn tại',
+                          style: TextStyle(
+                            color: Colors.blue[700],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ],
+            ),
           ),
         ),
         actions: [
@@ -545,7 +682,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           ElevatedButton.icon(
             onPressed: () {
               if (formKey.currentState!.validate()) {
-                _assignRoom(user, roomController.text.trim(), authProvider);
+                final fullRoomId = 'Phòng ${roomController.text.trim()}';
+                _assignRoom(user, fullRoomId, authProvider);
                 Navigator.of(context).pop();
               }
             },
@@ -686,7 +824,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Bạn có chắc muốn bỏ gán phòng ${user.roomId} khỏi người dùng này?',
+              'Bạn có chắc muốn bỏ gán ${user.roomId} khỏi người dùng này?',
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 12),
@@ -742,7 +880,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      'Phòng ${user.roomId}',
+                      '${user.roomId}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.purple[700],

@@ -40,16 +40,21 @@ class UserProfile {
   final String? password;
 
   Map<String, dynamic> toMap() {
-    return {
+    final map = {
       'id': id,
       'email': email,
       'name': name,
       'role': role.value,
-      'roomId': roomId,
       'status': status,
       'createdAt': createdAt?.toIso8601String(),
       'password': password,
     };
+
+    if (roomId != null && roomId!.isNotEmpty) {
+      map['roomId'] = roomId;
+    }
+
+    return map;
   }
 
   factory UserProfile.fromMap(Map<dynamic, dynamic> data) {

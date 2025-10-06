@@ -1,6 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../models/user_profile.dart';
 import '../../providers/auth_provider.dart';
 
@@ -11,8 +11,7 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen>
-    with SingleTickerProviderStateMixin {
+class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final _loginEmailController = TextEditingController();
   final _loginPasswordController = TextEditingController();
@@ -53,176 +52,142 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+Widget build(BuildContext context) {
+  final theme = Theme.of(context);
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF8E2DE2), // Purple
-              Color(0xFF4A00E0), // Blue
-              Color(0xFF92FE9D), // Green
-            ],
-            stops: [0.0, 0.5, 1.0],
+  return Scaffold(
+    body: Stack(
+      children: [
+        // Background image
+        Positioned.fill(
+          child: Image.asset(
+            'assets/background.jpg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: Colors.grey[300]);
+            },
           ),
         ),
-        child: SafeArea(
+        // Blur + translucent overlay
+        Positioned.fill(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+            child: Container(
+              color: Colors.black.withOpacity(0.2),
+            ),
+          ),
+        ),
+        SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Consumer<AuthProvider>(
                 builder: (context, auth, child) {
-                  return Card(
-                    elevation: 20,
-                    shadowColor: Colors.purple.withOpacity(0.5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
+                  return Container(
+                    width: double.infinity,
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
                     ),
-                    child: Container(
-                      width: double.infinity,
-                      constraints: const BoxConstraints(maxWidth: 400),
-                      padding: const EdgeInsets.all(40),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Profile Icon - 100px như trong hình
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.person, size: 48, color: Colors.pink),
+                        const SizedBox(height: 12),
+                        Text(
+                          _tabController.index == 0
+                              ? 'Chào mừng bạn đến với ứng dụng Quản Lý Nhà Trọ'
+                              : 'Hãy tạo một tài khoản',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Tabs: fix width & rounded indicator
+                        Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TabBar(
+                                  controller: _tabController,
+                                  indicator: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  labelColor: Colors.black,
+                                  unselectedLabelColor: Colors.grey,
+                                  indicatorSize: TabBarIndicatorSize.tab,
+                                  tabs: const [
+                                    Tab(text: 'Đăng nhập'),
+                                    Tab(text: 'Đăng ký'),
+                                  ],
+                                ),
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.purple.withOpacity(0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Error message
+                        if (auth.errorMessage != null)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.red[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.red.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    auth.errorMessage!,
+                                    style: TextStyle(color: Colors.red[700], fontSize: 13),
+                                  ),
                                 ),
                               ],
                             ),
-                            child: const Icon(
-                              Icons.person,
-                              size: 50,
-                              color: Colors.white,
-                            ),
                           ),
-                          const SizedBox(height: 24),
 
-                          // Title
-                          Text(
-                            'Member Login',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF2D3748),
-                              fontSize: 28,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-
-                          // Tab Bar
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: TabBar(
+                        // Form body
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          child: SizedBox(
+                            height: _tabController.index == 0 ? 270 : 400,
+                            child: TabBarView(
                               controller: _tabController,
-                              indicator: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              labelColor: const Color(0xFF2D3748),
-                              unselectedLabelColor: Colors.grey[600],
-                              tabs: const [
-                                Tab(
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 12),
-                                    child: Text(
-                                      'Đăng nhập',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Tab(
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 12),
-                                    child: Text(
-                                      'Đăng ký',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                              physics: const NeverScrollableScrollPhysics(),
+                              children: [
+                                _buildLoginForm(auth),
+                                _buildRegisterForm(auth),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 24),
-
-                          // Error Message
-                          if (auth.errorMessage != null)
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.red[50],
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.red[200]!),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    color: Colors.red[700],
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      auth.errorMessage!,
-                                      style: TextStyle(
-                                        color: Colors.red[700],
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                          // Tab Views
-                          AnimatedSize(
-                            duration: const Duration(milliseconds: 300),
-                            child: SizedBox(
-                              height: _tabController.index == 0 ? 250 : 350,
-                              child: TabBarView(
-                                controller: _tabController,
-                                children: [
-                                  _buildLoginForm(auth),
-                                  _buildRegisterForm(auth),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -230,117 +195,30 @@ class _AuthScreenState extends State<AuthScreen>
             ),
           ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
+
 
   Widget _buildLoginForm(AuthProvider auth) {
     return Column(
       children: [
         const SizedBox(height: 20),
-        // Email Field với màu xám như trong hình
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: TextField(
-            controller: _loginEmailController,
-            decoration: const InputDecoration(
-              hintText: 'Email',
-              prefixIcon: Icon(Icons.email_outlined, color: Colors.grey),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
-            ),
-            keyboardType: TextInputType.emailAddress,
-          ),
+        _buildTextField(
+          controller: _loginEmailController,
+          hintText: 'Email',
+          icon: Icons.email_outlined,
+          keyboardType: TextInputType.emailAddress,
+          validator: (value) => value == null || value.isEmpty ? 'Không được để trống' : null,
         ),
         const SizedBox(height: 16),
-
-        // Password Field với màu xám như trong hình
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: TextField(
-            controller: _loginPasswordController,
-            obscureText: _obscurePassword,
-            decoration: InputDecoration(
-              hintText: 'Mật khẩu',
-              prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                  color: Colors.grey,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
-            ),
-          ),
-        ),
+        _buildPasswordField(controller: _loginPasswordController),
         const SizedBox(height: 24),
-
-        // LOGIN Button với gradient xanh lá như trong hình
-        SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
-            onPressed: auth.isLoading ? null : () => _handleLogin(auth),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              padding: EdgeInsets.zero,
-            ),
-            child: Ink(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF4CAF50), Color(0xFF45A049)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Container(
-                alignment: Alignment.center,
-                child: auth.isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
-                    : const Text(
-                        'LOGIN',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-              ),
-            ),
-          ),
+        _buildSubmitButton(
+          text: 'ĐĂNG NHẬP',
+          onPressed: auth.isLoading ? null : () => _handleLogin(auth),
+          isLoading: auth.isLoading,
         ),
       ],
     );
@@ -352,211 +230,169 @@ class _AuthScreenState extends State<AuthScreen>
       child: Column(
         children: [
           const SizedBox(height: 20),
-          // Name Field
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: TextFormField(
-              controller: _registerNameController,
-              decoration: const InputDecoration(
-                hintText: 'Họ tên',
-                prefixIcon: Icon(Icons.person_outline, color: Colors.grey),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-              ),
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'Vui lòng nhập họ tên';
-                }
-                return null;
-              },
-            ),
+          _buildTextField(
+            controller: _registerNameController,
+            hintText: 'Họ tên',
+            icon: Icons.person_outline,
+            validator: (value) => value == null || value.isEmpty ? 'Không được để trống' : null,
           ),
           const SizedBox(height: 16),
-
-          // Email Field
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: TextFormField(
-              controller: _registerEmailController,
-              decoration: const InputDecoration(
-                hintText: 'Email',
-                prefixIcon: Icon(Icons.email_outlined, color: Colors.grey),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'Vui lòng nhập email';
-                }
-                if (!value!.contains('@')) {
-                  return 'Email không hợp lệ';
-                }
-                return null;
-              },
-            ),
+          _buildTextField(
+            controller: _registerEmailController,
+            hintText: 'Email',
+            icon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) => value == null || value.isEmpty ? 'Không được để trống' : null,
           ),
           const SizedBox(height: 16),
-
-          // Role Selection
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(30),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              children: [
-                const Icon(Icons.business, color: Colors.grey),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<UserRole>(
-                      value: _registerRole,
-                      hint: const Text('Chọn vai trò'),
-                      isExpanded: true,
-                      items: UserRole.values.map((role) {
-                        return DropdownMenuItem<UserRole>(
-                          value: role,
-                          child: Text(
-                            role == UserRole.landlord
-                                ? 'Chủ trọ'
-                                : 'Khách thuê',
-                            style: const TextStyle(color: Colors.black87),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (UserRole? newRole) {
-                        if (newRole != null) {
-                          setState(() {
-                            _registerRole = newRole;
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildRoleDropdown(),
           const SizedBox(height: 16),
-
-          // Password Field
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: TextFormField(
-              controller: _registerPasswordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                hintText: 'Mật khẩu',
-                prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                    color: Colors.grey,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-              ),
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'Vui lòng nhập mật khẩu';
-                }
-                if (value!.length < 6) {
-                  return 'Mật khẩu phải có ít nhất 6 ký tự';
-                }
-                return null;
-              },
-            ),
-          ),
+          _buildPasswordField(controller: _registerPasswordController),
           const SizedBox(height: 24),
-
-          // Register Button
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: auth.isLoading ? null : () => _handleRegister(auth),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                padding: EdgeInsets.zero,
-              ),
-              child: Ink(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4CAF50), Color(0xFF45A049)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Container(
-                  alignment: Alignment.center,
-                  child: auth.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : const Text(
-                          'ĐĂNG KÝ',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                ),
-              ),
-            ),
+          _buildSubmitButton(
+            text: 'ĐĂNG KÝ',
+            onPressed: auth.isLoading ? null : () => _handleRegister(auth),
+            isLoading: auth.isLoading,
           ),
         ],
       ),
     );
   }
 
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: Colors.green[600]),
+        hintText: hintText,
+        filled: true,
+        fillColor: Colors.grey[100],
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: Colors.green.shade400, width: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordField({required TextEditingController controller}) {
+    return TextFormField(
+      controller: controller,
+      obscureText: _obscurePassword,
+      validator: (value) => value == null || value.length < 6 ? 'Ít nhất 6 ký tự' : null,
+      decoration: InputDecoration(
+        prefixIcon: Icon(Icons.lock_outline, color: Colors.green[600]),
+        hintText: 'Mật khẩu',
+        filled: true,
+        fillColor: Colors.grey[100],
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: Colors.green.shade400, width: 2),
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off, color: Colors.green[600]),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton({
+    required String text,
+    required VoidCallback? onPressed,
+    bool isLoading = false,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.pinkAccent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          elevation: 6,
+        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(
+                text,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildRoleDropdown() {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    decoration: BoxDecoration(
+      color: Colors.grey[100],
+      borderRadius: BorderRadius.circular(30),
+      border: Border.all(color: Colors.grey.shade300),
+    ),
+    child: DropdownButton<UserRole>(
+      value: _registerRole,
+      isExpanded: true,
+      underline: const SizedBox(),
+      icon: Icon(Icons.keyboard_arrow_down, color: Colors.green[600]),
+      items: UserRole.values.map((role) {
+        return DropdownMenuItem<UserRole>(
+          value: role,
+          child: Row(
+            children: [
+              Icon(
+                role == UserRole.landlord ? Icons.home_work : Icons.person,
+                color: Colors.pink,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(role == UserRole.landlord ? 'Chủ trọ' : 'Khách thuê'),
+            ],
+          ),
+        );
+      }).toList(),
+      onChanged: (role) {
+        if (role != null) {
+          setState(() => _registerRole = role);
+        }
+      },
+    ),
+  );
+}
+
   Future<void> _handleLogin(AuthProvider auth) async {
     final email = _loginEmailController.text.trim();
     final password = _loginPasswordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      // Set error directly since there's no setError method
-      return;
-    }
+    if (email.isEmpty || password.isEmpty) return;
 
     final success = await auth.login(email: email, password: password);
     if (success && auth.currentUser != null && mounted) {
@@ -565,9 +401,7 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   Future<void> _handleRegister(AuthProvider auth) async {
-    if (!_registerFormKey.currentState!.validate()) {
-      return;
-    }
+    if (!_registerFormKey.currentState!.validate()) return;
 
     final name = _registerNameController.text.trim();
     final email = _registerEmailController.text.trim();
