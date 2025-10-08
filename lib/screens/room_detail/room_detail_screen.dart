@@ -98,6 +98,19 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
       );
     }
 
+    final titleStyle = const TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+    );
+    final labelStyle = const TextStyle(
+      fontSize: 17,
+      fontWeight: FontWeight.w600,
+    );
+    final valueStyle = const TextStyle(
+      fontSize: 17,
+      fontWeight: FontWeight.w700,
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(room.name),
@@ -108,150 +121,310 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadRoom,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              child: ListTile(
-                title: Text(
-                  room.name,
-                  style: Theme.of(context).textTheme.titleLarge,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset('assets/nenmay.jpg', fit: BoxFit.cover),
+          ),
+          RefreshIndicator(
+            onRefresh: _loadRoom,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // --- KHUNG 1 (Đã căn giữa và giới hạn chiều rộng) ---
+                Align(
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.30,
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Stack(
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  room.name,
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Trạng thái: ${room.status}',
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                Text(
+                                  'Giá thuê: ${room.price}',
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                if (room.occupant != null &&
+                                    room.occupant!.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      'Người thuê: ${room.occupant!}',
+                                      style: const TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              child: _StatusChip(status: room.status),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    Text('Trạng thái: ${room.status}'),
-                    Text('Giá thuê: ${room.price}'),
-                    Text('Nhiệt độ: ${room.temperature}'),
-                    Text('Độ ẩm: ${room.humidity}%'),
-                    Text('Gas: ${room.gasLevel}%'),
-                    if (room.occupant != null && room.occupant!.isNotEmpty)
-                      Text('Người thuê: ${room.occupant!}'),
-                  ],
+
+                const SizedBox(height: 16),
+
+                // --- KHUNG 2 & 3 ---
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // THIẾT BỊ
+                          Expanded(
+                            child: Card(
+                              clipBehavior: Clip.antiAlias,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Thiết bị', style: titleStyle),
+                                    const Divider(),
+                                    const SizedBox(height: 8),
+                                    _DeviceRow(
+                                      label: 'Đèn',
+                                      valueWidget: Switch(
+                                        value: room.lightOn,
+                                        onChanged: landlord
+                                            ? (v) => _updateRoom(
+                                                room.copyWith(lightOn: v),
+                                              )
+                                            : null,
+                                      ),
+                                      labelStyle: labelStyle,
+                                    ),
+                                    _DeviceRow(
+                                      label: 'Quạt',
+                                      valueWidget: Switch(
+                                        value: room.fanOn,
+                                        onChanged: landlord
+                                            ? (v) => _updateRoom(
+                                                room.copyWith(fanOn: v),
+                                              )
+                                            : null,
+                                      ),
+                                      labelStyle: labelStyle,
+                                    ),
+                                    _DeviceRow(
+                                      label: 'Cảnh báo gas',
+                                      valueWidget: Switch(
+                                        value: room.gasAlert,
+                                        onChanged: landlord
+                                            ? (v) => _updateRoom(
+                                                room.copyWith(gasAlert: v),
+                                              )
+                                            : null,
+                                      ),
+                                      labelStyle: labelStyle,
+                                    ),
+                                    _DeviceRow(
+                                      label: 'Cảm biến chuyển động',
+                                      valueWidget: Switch(
+                                        value: room.motionDetected,
+                                        onChanged: landlord
+                                            ? (v) => _updateRoom(
+                                                room.copyWith(
+                                                  motionDetected: v,
+                                                ),
+                                              )
+                                            : null,
+                                      ),
+                                      labelStyle: labelStyle,
+                                    ),
+                                    const Spacer(),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // CẢM BIẾN
+                          Expanded(
+                            child: Card(
+                              clipBehavior: Clip.antiAlias,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Cảm biến', style: titleStyle),
+                                    const Divider(),
+                                    const SizedBox(height: 8),
+                                    _SensorRow(
+                                      label: 'Nhiệt độ',
+                                      value: '${room.temperatureValue}°C',
+                                      labelStyle: labelStyle,
+                                      valueStyle: valueStyle,
+                                    ),
+                                    _SensorRow(
+                                      label: 'Độ ẩm',
+                                      value: '${room.humidity}%',
+                                      labelStyle: labelStyle,
+                                      valueStyle: valueStyle,
+                                    ),
+                                    _SensorRow(
+                                      label: 'Gas',
+                                      value: '${room.gasLevel}%',
+                                      labelStyle: labelStyle,
+                                      valueStyle: valueStyle,
+                                    ),
+                                    _SensorRow(
+                                      label: 'Trạng thái',
+                                      value: room.motionDetected
+                                          ? 'Đang có chuyển động'
+                                          : 'Không có chuyển động',
+                                      labelStyle: labelStyle,
+                                      valueStyle: valueStyle,
+                                    ),
+                                    const Spacer(),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              ),
+
+                const SizedBox(height: 16),
+              ],
             ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Thiết bị',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Divider(),
-                    _DeviceToggle(
-                      title: 'Đèn',
-                      value: room.lightOn,
-                      enabled: landlord,
-                      onChanged: (value) =>
-                          _updateRoom(room.copyWith(lightOn: value)),
-                    ),
-                    _DeviceToggle(
-                      title: 'Quạt',
-                      value: room.fanOn,
-                      enabled: landlord,
-                      onChanged: (value) =>
-                          _updateRoom(room.copyWith(fanOn: value)),
-                    ),
-                    _DeviceToggle(
-                      title: 'Cảnh báo gas',
-                      value: room.gasAlert,
-                      enabled: landlord,
-                      onChanged: (value) =>
-                          _updateRoom(room.copyWith(gasAlert: value)),
-                    ),
-                    _DeviceToggle(
-                      title: 'Cảm biến chuyển động',
-                      value: room.motionDetected,
-                      enabled: landlord,
-                      onChanged: (value) =>
-                          _updateRoom(room.copyWith(motionDetected: value)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Cảm biến',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Divider(),
-                    _SensorRow(
-                      label: 'Nhiệt độ',
-                      value: '${room.temperatureValue} C',
-                    ),
-                    _SensorRow(label: 'Độ ẩm', value: '${room.humidity}%'),
-                    _SensorRow(label: 'Gas', value: '${room.gasLevel}%'),
-                    _SensorRow(
-                      label: 'Trạng thái',
-                      value: room.motionDetected
-                          ? 'Đang có chuyển động'
-                          : 'Không có chuyển động',
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _DeviceToggle extends StatelessWidget {
-  const _DeviceToggle({
-    required this.title,
-    required this.value,
-    required this.enabled,
-    required this.onChanged,
-  });
+/// Chip trạng thái hiển thị đẹp hơn
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
 
-  final String title;
-  final bool value;
-  final bool enabled;
-  final ValueChanged<bool> onChanged;
+  final String status;
+
+  Color _getColor() {
+    switch (status.toLowerCase()) {
+      case 'có người':
+        return Colors.green;
+      case 'bảo trì':
+        return Colors.orange;
+      case 'trống':
+        return Colors.grey;
+      default:
+        return Colors.blueGrey;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SwitchListTile(
-      title: Text(title),
-      value: value,
-      onChanged: enabled ? onChanged : null,
+    final color = _getColor();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(color: color, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
 
-class _SensorRow extends StatelessWidget {
-  const _SensorRow({required this.label, required this.value});
+class _DeviceRow extends StatelessWidget {
+  const _DeviceRow({
+    required this.label,
+    required this.valueWidget,
+    required this.labelStyle,
+  });
 
   final String label;
-  final String value;
+  final Widget valueWidget;
+  final TextStyle labelStyle;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(child: Text(label, style: labelStyle)),
+          valueWidget,
         ],
+      ),
+    );
+  }
+}
+
+class _SensorRow extends StatelessWidget {
+  const _SensorRow({
+    required this.label,
+    required this.value,
+    required this.labelStyle,
+    required this.valueStyle,
+  });
+
+  final String label;
+  final String value;
+  final TextStyle labelStyle;
+  final TextStyle valueStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 56),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Expanded(child: Text(label, style: labelStyle)),
+            const SizedBox(width: 8),
+            Flexible(
+              flex: 0,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.35,
+                ),
+                child: Text(
+                  value,
+                  style: valueStyle,
+                  textAlign: TextAlign.right,
+                  softWrap: true,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
