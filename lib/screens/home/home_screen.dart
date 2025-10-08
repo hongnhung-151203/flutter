@@ -129,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/may.jpg'), // 🖼️ đường dẫn tới ảnh
+            image: AssetImage('assets/nenmay.jpg'), // 🖼️ đường dẫn tới ảnh
             fit: BoxFit.cover,
           ),
         ),
@@ -827,7 +827,7 @@ class _RoomCard extends StatelessWidget {
   }
 
   Color _booleanMetricColor(bool active) {
-    return active ? Colors.red : Colors.green;
+    return active ? Colors.red : const Color.fromARGB(255, 83, 83, 83);
   }
 
   @override

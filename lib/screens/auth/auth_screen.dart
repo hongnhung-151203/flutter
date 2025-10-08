@@ -61,7 +61,7 @@ Widget build(BuildContext context) {
         // Background image
         Positioned.fill(
           child: Image.asset(
-            'assets/background.jpg',
+            'assets/nenmay.jpg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
               return Container(color: Colors.grey[300]);
@@ -102,7 +102,7 @@ Widget build(BuildContext context) {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.person, size: 48, color: Colors.pink),
+                        const Icon(Icons.person, size: 48, color: Color.fromARGB(255, 2, 86, 164)),
                         const SizedBox(height: 12),
                         Text(
                           _tabController.index == 0
@@ -134,7 +134,7 @@ Widget build(BuildContext context) {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   labelColor: Colors.black,
-                                  unselectedLabelColor: Colors.grey,
+                                  unselectedLabelColor: const Color.fromARGB(255, 59, 59, 59),
                                   indicatorSize: TabBarIndicatorSize.tab,
                                   tabs: const [
                                     Tab(text: 'Đăng nhập'),
@@ -326,7 +326,7 @@ Widget build(BuildContext context) {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.pinkAccent,
+          backgroundColor: const Color.fromARGB(255, 2, 86, 164),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           elevation: 6,
         ),
@@ -371,7 +371,7 @@ Widget build(BuildContext context) {
             children: [
               Icon(
                 role == UserRole.landlord ? Icons.home_work : Icons.person,
-                color: Colors.pink,
+                color: const Color.fromARGB(255, 2, 86, 164),
                 size: 20,
               ),
               const SizedBox(width: 8),
