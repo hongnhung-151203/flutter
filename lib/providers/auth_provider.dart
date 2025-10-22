@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../models/user_profile.dart';
 import '../services/firebase_service.dart'; // Thêm dòng này vào đầu file
@@ -207,130 +208,147 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> login({required String email, required String password}) async {
-    _loading = true;
-    _error = null;
-    notifyListeners();
+  _loading = true;
+  _error = null;
+  notifyListeners();
 
-    if (kDebugMode) {
-      debugPrint('AuthProvider: Attempting login for email: $email');
-      debugPrint('AuthProvider: Firebase online: $_isOnline');
-    }
+  if (kDebugMode) {
+    debugPrint('AuthProvider: Attempting login for email: $email');
+    debugPrint('AuthProvider: Firebase online: $_isOnline');
+  }
 
-    try {
-      UserProfile? profile;
+  try {
+    UserProfile? profile;
 
-      // Try Firebase first if available
-      if (_database != null && _isOnline) {
-        try {
+    // Try Firebase first if available
+    if (_database != null && _isOnline) {
+      try {
+        if (kDebugMode) {
+          debugPrint('AuthProvider: Checking Firebase for user...');
+        }
+
+        final snapshot = await _database.ref('users').get();
+        if (snapshot.exists && snapshot.value is Map) {
+          final data = Map<dynamic, dynamic>.from(snapshot.value as Map);
+
           if (kDebugMode) {
-            debugPrint('AuthProvider: Checking Firebase for user...');
+            debugPrint(
+              'AuthProvider: Found ${data.length} users in Firebase',
+            );
           }
 
-          final snapshot = await _database.ref('users').get();
-          if (snapshot.exists && snapshot.value is Map) {
-            final data = Map<dynamic, dynamic>.from(snapshot.value as Map);
+          for (final entry in data.entries) {
+            final userData = Map<dynamic, dynamic>.from(entry.value);
+            final user = UserProfile.fromMap(userData);
+            final storedPassword = userData['password']?.toString() ?? '';
 
             if (kDebugMode) {
-              debugPrint(
-                'AuthProvider: Found ${data.length} users in Firebase',
-              );
+              debugPrint('AuthProvider: Checking user: ${user.email}');
             }
 
-            for (final entry in data.entries) {
-              final userData = Map<dynamic, dynamic>.from(entry.value);
-              final user = UserProfile.fromMap(userData);
-              final storedPassword = userData['password']?.toString() ?? '';
-
+            if (user.email.toLowerCase() == email.toLowerCase() &&
+                storedPassword == password) {
+              profile = user.copyWith(password: storedPassword);
               if (kDebugMode) {
-                debugPrint('AuthProvider: Checking user: ${user.email}');
+                debugPrint(
+                  'AuthProvider: Firebase login successful for: ${user.email}',
+                );
               }
-
-              if (user.email.toLowerCase() == email.toLowerCase() &&
-                  storedPassword == password) {
-                profile = user.copyWith(password: storedPassword);
-                if (kDebugMode) {
-                  debugPrint(
-                    'AuthProvider: Firebase login successful for: ${user.email}',
-                  );
-                }
-                break;
-              }
-            }
-          } else {
-            if (kDebugMode) {
-              debugPrint('AuthProvider: No users found in Firebase');
+              break;
             }
           }
-        } catch (error) {
+        } else {
           if (kDebugMode) {
-            debugPrint('AuthProvider: Firebase login error: $error');
-          }
-          // Fall back to local data on Firebase error
-        }
-      } else {
-        if (kDebugMode) {
-          debugPrint(
-            'AuthProvider: Firebase not available, checking local data',
-          );
-        }
-      }
-
-      // Fall back to local data if Firebase not available or user not found
-      if (profile == null) {
-        if (kDebugMode) {
-          debugPrint(
-            'AuthProvider: Checking ${_fallbackUsers.length} fallback users',
-          );
-        }
-
-        for (final user in _fallbackUsers) {
-          if (kDebugMode) {
-            debugPrint('AuthProvider: Checking fallback user: ${user.email}');
-          }
-
-          if (user.email.toLowerCase() == email.toLowerCase() &&
-              user.password == password) {
-            profile = user;
-            if (kDebugMode) {
-              debugPrint(
-                'AuthProvider: Fallback login successful for: ${user.email}',
-              );
-            }
-            break;
+            debugPrint('AuthProvider: No users found in Firebase');
           }
         }
-      }
-
-      if (profile == null) {
-        _error = 'Email hoặc mật khẩu không đúng.';
+      } catch (error) {
         if (kDebugMode) {
-          debugPrint('AuthProvider: Login failed - no matching user found');
+          debugPrint('AuthProvider: Firebase login error: $error');
         }
-        return false;
+        // Fall back to local data on Firebase error
       }
-
-      _currentUser = profile;
-      await _persistSession(profile);
-
+    } else {
       if (kDebugMode) {
         debugPrint(
-          'AuthProvider: User logged in successfully: ${profile.email}',
+          'AuthProvider: Firebase not available, checking local data',
+        );
+      }
+    }
+
+    // Fall back to local data if Firebase not available or user not found
+    if (profile == null) {
+      if (kDebugMode) {
+        debugPrint(
+          'AuthProvider: Checking ${_fallbackUsers.length} fallback users',
         );
       }
 
-      notifyListeners();
-      return true;
-    } catch (error) {
-      _error = 'Đăng nhập thất bại: $error';
+      for (final user in _fallbackUsers) {
+        if (kDebugMode) {
+          debugPrint('AuthProvider: Checking fallback user: ${user.email}');
+        }
+
+        if (user.email.toLowerCase() == email.toLowerCase() &&
+            user.password == password) {
+          profile = user;
+          if (kDebugMode) {
+            debugPrint(
+              'AuthProvider: Fallback login successful for: ${user.email}',
+            );
+          }
+          break;
+        }
+      }
+    }
+
+    if (profile == null) {
+      _error = 'Email hoặc mật khẩu không đúng.';
       if (kDebugMode) {
-        debugPrint('AuthProvider: Login failed with exception: $error');
+        debugPrint('AuthProvider: Login failed - no matching user found');
       }
       return false;
-    } finally {
-      _loading = false;
-      notifyListeners();
     }
+
+    _currentUser = profile;
+    await _persistSession(profile);
+
+    // 🔹 Lấy FCM token và cập nhật vào Firebase sau khi đăng nhập thành công
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        final updatedUser = _currentUser!.copyWith(fcmToken: token);
+        await updateUserProfile(updatedUser);
+        if (kDebugMode) {
+          debugPrint('AuthProvider: FCM token updated for ${updatedUser.email}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('AuthProvider: Lỗi khi cập nhật FCM token: $e');
+      }
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+        'AuthProvider: User logged in successfully: ${profile.email}',
+      );
+    }
+
+    notifyListeners();
+    return true;
+  } catch (error) {
+    _error = 'Đăng nhập thất bại: $error';
+    if (kDebugMode) {
+      debugPrint('AuthProvider: Login failed with exception: $error');
+    }
+    return false;
+  } finally {
+    _loading = false;
+    notifyListeners();
   }
+}
+
 
   Future<bool> register({
     required String email,

@@ -28,6 +28,7 @@ class UserProfile {
     this.status = 'active',
     this.createdAt,
     this.password,
+    this.fcmToken, // thêm trường fcmToken
   });
 
   final String id;
@@ -38,6 +39,7 @@ class UserProfile {
   final String status;
   final DateTime? createdAt;
   final String? password;
+  final String? fcmToken;  // trường mới
 
   Map<String, dynamic> toMap() {
     final map = {
@@ -48,6 +50,7 @@ class UserProfile {
       'status': status,
       'createdAt': createdAt?.toIso8601String(),
       'password': password,
+      'fcmToken': fcmToken,  // map token
     };
 
     if (roomId != null && roomId!.isNotEmpty) {
@@ -64,8 +67,7 @@ class UserProfile {
       return null;
     }
 
-    final id =
-        data['id']?.toString() ??
+    final id = data['id']?.toString() ??
         data['uid']?.toString() ??
         'user-${DateTime.now().millisecondsSinceEpoch}';
     return UserProfile(
@@ -77,6 +79,7 @@ class UserProfile {
       status: data['status']?.toString() ?? 'active',
       createdAt: parseDate(data['createdAt']),
       password: data['password']?.toString(),
+      fcmToken: data['fcmToken']?.toString(),  // parse token từ map
     );
   }
 
@@ -97,6 +100,7 @@ class UserProfile {
     String? status,
     DateTime? createdAt,
     String? password,
+    String? fcmToken,  // thêm vào copyWith
   }) {
     return UserProfile(
       id: id ?? this.id,
@@ -107,6 +111,7 @@ class UserProfile {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       password: password ?? this.password,
+      fcmToken: fcmToken ?? this.fcmToken,  // copy token
     );
   }
 }

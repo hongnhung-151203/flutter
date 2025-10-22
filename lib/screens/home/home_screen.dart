@@ -889,7 +889,7 @@ class _RoomCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        room.name,
+                        'Phòng ${room.name}',
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF1C2534),

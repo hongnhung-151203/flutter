@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_messaging/firebase_messaging.dart'; // thêm để FCM hoạt động
 
 import 'debug_firebase.dart';
 import 'providers/auth_provider.dart';
@@ -11,6 +12,7 @@ import 'screens/room_detail/room_detail_screen.dart';
 import 'screens/test_auth_screen.dart';
 import 'screens/user_management/user_management_screen.dart';
 import 'services/firebase_service.dart';
+import 'services/fcm_service.dart'; // ✅ thêm dòng này
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +29,21 @@ Future<void> main() async {
 
   final roomProvider = RoomProvider(FirebaseService.database);
   await roomProvider.bootstrap();
+
+  // =======================
+  // ✅ Thêm đoạn này vào đây, ngay sau khi khởi tạo authProvider và roomProvider
+  // Khởi tạo FCM, lấy token và cập nhật token lên user profile trong DB
+  final token = await FCMService.initFCM(
+    vapidKey:
+        "BCLIBwAryx2xBb90NNWGZer1z2yorahY5NDFGjP5vy-5AIlsyerLKbjeFFuvs6OXS6bStxNDNMXyndV1g4ASzZc",
+  );
+
+  // Cập nhật token FCM cho user đang đăng nhập
+  if (token != null && authProvider.currentUser != null) {
+    final updatedUser = authProvider.currentUser!.copyWith(fcmToken: token);
+    await authProvider.updateUserProfile(updatedUser);
+  }
+  // =======================
 
   runApp(
     MultiProvider(
