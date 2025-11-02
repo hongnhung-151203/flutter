@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/room.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/room_provider.dart';
+import '../../widgets/alert_notification_box.dart'; 
 
 const _surfaceColor = Colors.white;
 const _accentColor = Color(0xFF667eea);
@@ -96,7 +97,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const List<String> _statusOptions = ['Trống', 'Có người', 'Bảo trì'];
+  static const List<String> _statusOptions = ['Trống', 'Có người', 'Bảo trì']; 
 
   @override
   void initState() {
@@ -104,10 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final provider = context.read<RoomProvider>();
     final authProvider = context.read<AuthProvider>();
 
-    // Bootstrap room data
     Future.microtask(provider.bootstrap);
-
-    // Refresh user data to ensure consistency
     Future.microtask(authProvider.refreshUsers);
   }
 
@@ -134,58 +132,72 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
+          child: Stack( 
             children: [
-              _buildCustomAppBar(context, auth, theme),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: roomsProvider.bootstrap,
-                  displacement: 24,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSummaryRow(context, roomsProvider.rooms, auth),
-                        const SizedBox(height: 28),
-                        const _SectionTitle(title: 'Danh sách phòng'),
-                        const SizedBox(height: 12),
+              // 1. Lớp NỀN: Giữ nguyên toàn bộ nội dung Column cũ
+              Positioned.fill(
+                child: Column(
+                  children: [
+                    _buildCustomAppBar(context, auth, theme),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: roomsProvider.bootstrap,
+                        displacement: 24,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSummaryRow(context, roomsProvider.rooms, auth),
+                              const SizedBox(height: 28),
+                              const _SectionTitle(title: 'Danh sách phòng'),
+                              const SizedBox(height: 12),
 
-                        if (rooms.isEmpty)
-                          _EmptyStateCard(isTenant: auth.isTenant)
-                        else
-                          GridView.count(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 8,
-                            childAspectRatio: 2.9, // Điều chỉnh cho vừa ý
-                            physics: const NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
-                            children: rooms.map((room) {
-                              return SizedBox(
-                                height:
-                                    260, // 👈 Đảm bảo các card có cùng chiều cao
-                                child: _RoomCard(
-                                  room: room,
-                                  landlordActions: auth.isLandlord
-                                      ? LandlordActions(
-                                          onEdit: () => _openRoomDialog(
-                                            context,
-                                            room: room,
-                                          ),
-                                          onDelete: () =>
-                                              _confirmDelete(context, room),
-                                        )
-                                      : null,
+                              if (rooms.isEmpty)
+                                _EmptyStateCard(isTenant: auth.isTenant)
+                              else
+                                GridView.count(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 8,
+                                  childAspectRatio: 2.9,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  shrinkWrap: true,
+                                  children: rooms.map((room) {
+                                    return SizedBox(
+                                      height:
+                                          260, 
+                                      child: _RoomCard(
+                                        room: room,
+                                        landlordActions: auth.isLandlord
+                                            ? LandlordActions(
+                                                onEdit: () => _openRoomDialog(
+                                                  context,
+                                                  room: room,
+                                                ),
+                                                onDelete: () =>
+                                                    _confirmDelete(context, room),
+                                              )
+                                            : null,
+                                      ),
+                                    );
+                                  }).toList(),
                                 ),
-                              );
-                            }).toList(),
+                            ],
                           ),
-                      ],
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
+              ),
+
+              // 2. LỚP PHỦ: THÊM Hộp Thông báo ở góc trên bên phải
+              Positioned(
+                top: 20,
+                right: 20, 
+                child: const AlertNotificationBox(), 
               ),
             ],
           ),

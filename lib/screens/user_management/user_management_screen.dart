@@ -459,7 +459,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 if (user.roomId != null)
                   _buildInfoChip(
                     icon: Icons.meeting_room,
-                    label: '${user.roomId}',
+                    label: 'Phòng ${user.roomId}',
                     color: Colors.purple,
                   ),
                 _buildInfoChip(
@@ -510,7 +510,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                 child: ElevatedButton.icon(
                   onPressed: () => _showUnassignRoomDialog(user, authProvider),
                   icon: const Icon(Icons.meeting_room_outlined),
-                  label: Text('Bỏ gán ${user.roomId}'),
+                  label: Text('Bỏ gán Phòng ${user.roomId}'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange[50],
                     foregroundColor: Colors.orange[700],
@@ -636,8 +636,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                   },
                   onFieldSubmitted: (value) {
                     if (formKey.currentState!.validate()) {
-                      final fullRoomId = 'Phòng ${value.trim()}';
-                      _assignRoom(user, fullRoomId, authProvider);
+                      final roomId = value.trim();
+                      _assignRoom(user, roomId, authProvider);
                       Navigator.of(context).pop();
                     }
                   },
@@ -682,8 +682,8 @@ class _UserManagementScreenState extends State<UserManagementScreen>
           ElevatedButton.icon(
             onPressed: () {
               if (formKey.currentState!.validate()) {
-                final fullRoomId = 'Phòng ${roomController.text.trim()}';
-                _assignRoom(user, fullRoomId, authProvider);
+                final roomId = roomController.text.trim();
+                _assignRoom(user, roomId, authProvider);
                 Navigator.of(context).pop();
               }
             },

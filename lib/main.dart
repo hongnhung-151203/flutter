@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart'; // thêm để FCM 
 import 'debug_firebase.dart';
 import 'providers/auth_provider.dart';
 import 'providers/room_provider.dart';
+import 'providers/alert_provider.dart'; // <<< THÊM: Import AlertProvider
 import 'screens/auth/auth_screen.dart';
 import 'screens/firebase_test/firebase_test_screen.dart';
 import 'screens/home/home_screen.dart';
@@ -12,7 +13,7 @@ import 'screens/room_detail/room_detail_screen.dart';
 import 'screens/test_auth_screen.dart';
 import 'screens/user_management/user_management_screen.dart';
 import 'services/firebase_service.dart';
-import 'services/fcm_service.dart'; // ✅ thêm dòng này
+import 'services/fcm_service.dart'; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,8 +27,12 @@ Future<void> main() async {
 
   final authProvider = AuthProvider(FirebaseService.database);
   await authProvider.bootstrap();
+  
+  // KHỞI TẠO ALERT PROVIDER Ở ĐÂY
+  final alertProvider = AlertProvider(); 
 
-  final roomProvider = RoomProvider(FirebaseService.database);
+  // THAY ĐỔI: Khởi tạo RoomProvider VỚI alertProvider
+  final roomProvider = RoomProvider(FirebaseService.database, alertProvider); 
   await roomProvider.bootstrap();
 
   // =======================
@@ -50,6 +55,7 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider<RoomProvider>.value(value: roomProvider),
+        ChangeNotifierProvider<AlertProvider>.value(value: alertProvider), // <<< THÊM: Cung cấp AlertProvider
       ],
       child: const MyApp(),
     ),
