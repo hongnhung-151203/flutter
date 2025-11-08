@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/room.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/room_provider.dart';
-import '../../widgets/alert_notification_box.dart'; 
+import '../../widgets/alert_notification_box.dart';
 
 const _surfaceColor = Colors.white;
 const _accentColor = Color(0xFF667eea);
@@ -97,7 +97,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const List<String> _statusOptions = ['Trống', 'Có người', 'Bảo trì']; 
+  static const List<String> _statusOptions = ['Trống', 'Có người', 'Bảo trì'];
 
   @override
   void initState() {
@@ -132,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         child: SafeArea(
-          child: Stack( 
+          child: Stack(
             children: [
               // 1. Lớp NỀN: Giữ nguyên toàn bộ nội dung Column cũ
               Positioned.fill(
@@ -149,7 +149,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildSummaryRow(context, roomsProvider.rooms, auth),
+                              _buildSummaryRow(
+                                context,
+                                roomsProvider.rooms,
+                                auth,
+                              ),
                               const SizedBox(height: 28),
                               const _SectionTitle(title: 'Danh sách phòng'),
                               const SizedBox(height: 12),
@@ -161,13 +165,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   crossAxisCount: 2,
                                   crossAxisSpacing: 16,
                                   mainAxisSpacing: 8,
-                                  childAspectRatio: 2.9,
+                                  childAspectRatio: 2.5,
                                   physics: const NeverScrollableScrollPhysics(),
                                   shrinkWrap: true,
                                   children: rooms.map((room) {
                                     return SizedBox(
-                                      height:
-                                          260, 
+                                      height: 260,
                                       child: _RoomCard(
                                         room: room,
                                         landlordActions: auth.isLandlord
@@ -176,8 +179,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   context,
                                                   room: room,
                                                 ),
-                                                onDelete: () =>
-                                                    _confirmDelete(context, room),
+                                                onDelete: () => _confirmDelete(
+                                                  context,
+                                                  room,
+                                                ),
                                               )
                                             : null,
                                       ),
@@ -196,8 +201,8 @@ class _HomeScreenState extends State<HomeScreen> {
               // 2. LỚP PHỦ: THÊM Hộp Thông báo ở góc trên bên phải
               Positioned(
                 top: 20,
-                right: 20, 
-                child: const AlertNotificationBox(), 
+                right: 20,
+                child: const AlertNotificationBox(),
               ),
             ],
           ),
@@ -626,7 +631,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         id: room?.id ?? '',
                         name: nameController.text.trim(),
                         status: status,
-                        temperature: room?.temperature ?? '24C',
+                        temperature: room?.temperature ?? '24°C',
                         price: priceController.text.trim(),
                         occupant: occupantController.text.trim().isEmpty
                             ? null
@@ -834,8 +839,23 @@ class _RoomCard extends StatelessWidget {
     }
   }
 
-  Color _metricColorByValue(num value) {
-    return value < 50 ? Colors.green : Colors.red;
+  Color _metricColorByValue(num value, {required String type}) {
+    switch (type) {
+      case 'temperature':
+        if (value < 30) return Colors.green; // bình thường
+        if (value < 35) return Colors.orange; // vừa
+        return Colors.red; // cao
+      case 'humidity':
+        if (value < 60) return Colors.green;
+        if (value < 70) return Colors.orange;
+        return Colors.red;
+      case 'gas':
+        if (value < 1000) return Colors.green;
+        if (value < 1500) return Colors.orange;
+        return Colors.red;
+      default:
+        return Colors.green;
+    }
   }
 
   Color _booleanMetricColor(bool active) {
@@ -927,6 +947,7 @@ class _RoomCard extends StatelessWidget {
                           color: const Color(0xFF4C5968),
                         ),
                       ),
+                      const SizedBox(height: 6),
                     ],
                   ),
                 ),
@@ -970,11 +991,42 @@ class _RoomCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 6),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Chế độ giám sát',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color.fromARGB(255, 0, 0, 0),
+                        ),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Switch(
+                        value: room.monitorMode,
+                        activeColor: const Color(0xFF005D5D),
+                        activeTrackColor: const Color(0xFF008080),
+                        inactiveTrackColor: const Color(0xFFB0BEC5),
+                        thumbColor: WidgetStateProperty.all(Colors.white),
+                        onChanged: (value) {
+                          final provider = context.read<RoomProvider>();
+                          provider.updateRoom(
+                            room.copyWith(monitorMode: value),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+
                 _MetricChip(
                   icon: Icons.thermostat,
                   label: 'Nhiệt độ ${room.temperature}°C',
@@ -982,25 +1034,18 @@ class _RoomCard extends StatelessWidget {
                     room.temperature is num
                         ? room.temperature as num
                         : num.tryParse(room.temperature.toString()) ?? 0,
+                    type: 'temperature',
                   ),
                 ),
                 _MetricChip(
                   icon: Icons.local_fire_department_outlined,
-                  label: 'Gas ${room.gasLevel}%',
-                  color: _metricColorByValue(
-                    room.gasLevel is num
-                        ? room.gasLevel as num
-                        : num.tryParse(room.gasLevel.toString()) ?? 0,
-                  ),
+                  label: 'Gas ${room.gasLevel} PPM',
+                  color: _metricColorByValue(room.gasLevel, type: 'gas'),
                 ),
                 _MetricChip(
                   icon: Icons.water_drop_outlined,
                   label: 'Độ ẩm ${room.humidity}%',
-                  color: _metricColorByValue(
-                    room.humidity is num
-                        ? room.humidity as num
-                        : num.tryParse(room.humidity.toString()) ?? 0,
-                  ),
+                  color: _metricColorByValue(room.humidity, type: 'humidity'),
                 ),
                 _MetricChip(
                   icon: room.lightOn
@@ -1010,6 +1055,12 @@ class _RoomCard extends StatelessWidget {
                   color: _booleanMetricColor(room.lightOn),
                 ),
                 _MetricChip(
+                  icon: room.fanOn ? Icons.ac_unit : Icons.ac_unit_outlined,
+                  label: room.fanOn ? 'Quạt bật' : 'Quạt tắt',
+                  color: _booleanMetricColor(room.fanOn),
+                ),
+                if (room.monitorMode)
+                _MetricChip(
                   icon: Icons.sensors,
                   label: room.motionDetected
                       ? 'Phát hiện chuyển động'
@@ -1018,7 +1069,9 @@ class _RoomCard extends StatelessWidget {
                 ),
                 _MetricChip(
                   icon: Icons.warning_amber_rounded,
-                  label: room.gasAlert ? 'Cảnh báo gas' : 'Gas an toàn',
+                  label: room.gasAlert
+                      ? 'Khí Gas vượt ngưỡng 1500PPM'
+                      : 'Khí Gas an toàn',
                   color: _booleanMetricColor(room.gasAlert),
                 ),
               ],

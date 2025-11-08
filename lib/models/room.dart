@@ -11,6 +11,7 @@ class Room {
     this.gasLevel = 20,
     this.gasAlert = false,
     this.motionDetected = false,
+    this.monitorMode = false,
     this.humidity = 50,
     this.fanSpeed = 50,
     this.temperatureValue = 24,
@@ -29,11 +30,13 @@ class Room {
   final int gasLevel;
   final bool gasAlert;
   final bool motionDetected;
+  final bool monitorMode;
   final int humidity;
   final int fanSpeed;
   final int temperatureValue;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  
 
   bool get isOccupied => _normalizeStatus(status) == 'có_người';
 
@@ -49,6 +52,7 @@ class Room {
     int? gasLevel,
     bool? gasAlert,
     bool? motionDetected,
+    bool? monitorMode,
     int? humidity,
     int? fanSpeed,
     int? temperatureValue,
@@ -67,6 +71,7 @@ class Room {
       gasLevel: gasLevel ?? this.gasLevel,
       gasAlert: gasAlert ?? this.gasAlert,
       motionDetected: motionDetected ?? this.motionDetected,
+      monitorMode: monitorMode ?? this.monitorMode,
       humidity: humidity ?? this.humidity,
       fanSpeed: fanSpeed ?? this.fanSpeed,
       temperatureValue: temperatureValue ?? this.temperatureValue,
@@ -88,6 +93,7 @@ class Room {
       'gasLevel': gasLevel,
       'gasAlert': gasAlert,
       'motionDetected': motionDetected,
+      'monitorMode': monitorMode,
       'humidity': humidity,
       'fanSpeed': fanSpeed,
       'temperatureValue': temperatureValue,
@@ -124,6 +130,7 @@ class Room {
           : 20,
       gasAlert: data['gasAlert'] == true,
       motionDetected: data['motionDetected'] == true,
+      monitorMode: data['monitorMode'] == true,
       humidity: (data['humidity'] is num)
           ? (data['humidity'] as num).round()
           : 50,

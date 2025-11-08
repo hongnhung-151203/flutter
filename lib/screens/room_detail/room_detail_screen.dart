@@ -212,7 +212,11 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                                       label: 'Đèn',
                                       valueWidget: Switch(
                                         value: room.lightOn,
-                                        onChanged: landlord
+                                        onChanged:
+                                            (landlord ||
+                                                (auth.isTenant &&
+                                                    auth.currentUser?.roomId ==
+                                                        room.id))
                                             ? (v) => _updateRoom(
                                                 room.copyWith(lightOn: v),
                                               )
@@ -220,11 +224,16 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                                       ),
                                       labelStyle: labelStyle,
                                     ),
+
                                     _DeviceRow(
                                       label: 'Quạt',
                                       valueWidget: Switch(
                                         value: room.fanOn,
-                                        onChanged: landlord
+                                        onChanged:
+                                            (landlord ||
+                                                (auth.isTenant &&
+                                                    auth.currentUser?.roomId ==
+                                                        room.id))
                                             ? (v) => _updateRoom(
                                                 room.copyWith(fanOn: v),
                                               )
@@ -232,29 +241,41 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                                       ),
                                       labelStyle: labelStyle,
                                     ),
+                                    
                                     _DeviceRow(
-                                      label: 'Cảnh báo gas',
-                                      valueWidget: Switch(
-                                        value: room.gasAlert,
-                                        onChanged: landlord
-                                            ? (v) => _updateRoom(
-                                                room.copyWith(gasAlert: v),
-                                              )
-                                            : null,
+                                      label: 'Cảnh báo Khí Gas',
+                                      valueWidget: Container(
+                                        width:
+                                            48, // cùng kích thước với switch/quạt
+                                        height: 32,
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          room.gasAlert
+                                              ? Icons.warning
+                                              : Icons.warning_amber_outlined,
+                                          color: room.gasAlert
+                                              ? Colors.red
+                                              : Colors.grey,
+                                          size: 28,
+                                        ),
                                       ),
                                       labelStyle: labelStyle,
                                     ),
                                     _DeviceRow(
                                       label: 'Cảm biến chuyển động',
-                                      valueWidget: Switch(
-                                        value: room.motionDetected,
-                                        onChanged: landlord
-                                            ? (v) => _updateRoom(
-                                                room.copyWith(
-                                                  motionDetected: v,
-                                                ),
-                                              )
-                                            : null,
+                                      valueWidget: Container(
+                                        width: 48,
+                                        height: 32,
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          room.motionDetected
+                                              ? Icons.motion_photos_on
+                                              : Icons.motion_photos_off,
+                                          color: room.motionDetected
+                                              ? Colors.red
+                                              : Colors.grey,
+                                          size: 28,
+                                        ),
                                       ),
                                       labelStyle: labelStyle,
                                     ),
@@ -291,7 +312,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                                     ),
                                     _SensorRow(
                                       label: 'Gas',
-                                      value: '${room.gasLevel}%',
+                                      value: '${room.gasLevel} PPM',
                                       labelStyle: labelStyle,
                                       valueStyle: valueStyle,
                                     ),

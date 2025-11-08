@@ -1,72 +1,48 @@
 import 'package:flutter/material.dart';
-import 'dart:async'; // Cần import này cho Timer!
+import 'dart:async';
+import '../models/user_profile.dart';
 
-// Định nghĩa một lớp cho thông tin cảnh báo
+// === MODEL CẢNH BÁO ===
 class AlertInfo {
+  final String roomId;
   final String message;
   final DateTime timestamp;
 
-  // Constructor khởi tạo timestamp khi cảnh báo được tạo
-  AlertInfo({required this.message}) : timestamp = DateTime.now();
+  AlertInfo({required this.roomId, required this.message})
+      : timestamp = DateTime.now();
 
-  // Dùng để so sánh xem hai AlertInfo có giống nhau không (dựa trên message)
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is AlertInfo &&
           runtimeType == other.runtimeType &&
-          message == other.message;
+          message == other.message &&
+          roomId == other.roomId;
 
   @override
-  int get hashCode => message.hashCode;
+  int get hashCode => message.hashCode ^ roomId.hashCode;
 }
 
-// Provider quản lý trạng thái cảnh báo chung
+// === PROVIDER QUẢN LÝ CẢNH BÁO ===
 class AlertProvider extends ChangeNotifier {
-  // Danh sách các cảnh báo hiện tại (chứa cảnh báo, bất kể đã xác nhận hay chưa)
   List<AlertInfo> _currentAlerts = [];
 
-  // === CÁC THUỘC TÍNH MỚI CHO LOGIC TÁI CẢNH BÁO ===
-  final Duration _reAlertDelay = const Duration(seconds: 100);
-  Timer? _reAlertTimer; // Timer để kích hoạt tái cảnh báo
+  // Thời gian chờ để hiển thị lại cảnh báo
+  final Duration _reAlertDelay = const Duration(seconds: 30);
 
-  // Theo dõi xem người dùng đã xác nhận cảnh báo hiện tại chưa
-  bool _isAcknowledged = false;
+  // Lưu lại thời điểm user xác nhận cảnh báo
+  final Map<String, DateTime> _userAcknowledgements = {};
 
-  // Mã hash của tập hợp các tin nhắn cảnh báo hiện tại.
   int _currentAlertMessagesHash = 0;
-  // =================================================
 
   List<AlertInfo> get currentAlerts => _currentAlerts;
 
-  // Getter cho UI. Chỉ trả về TRUE nếu có cảnh báo VÀ CHƯA được xác nhận.
-  bool get hasUnacknowledgedAlerts =>
-      _currentAlerts.isNotEmpty && !_isAcknowledged;
-
-  // Giữ lại getter cũ cho các logic khác
-  bool get hasAlerts => _currentAlerts.isNotEmpty;
-
-  // Hàm quản lý Timer: Bắt đầu đếm ngược 5 giây
-  void _startReAlertTimer() {
-    // Hủy Timer cũ nếu có
-    _reAlertTimer?.cancel();
-    _reAlertTimer = null;
-
-    if (_currentAlerts.isNotEmpty && _isAcknowledged) {
-      // Chỉ bắt đầu hẹn giờ nếu đang trong trạng thái nguy hiểm và đã được xác nhận
-      _reAlertTimer = Timer(_reAlertDelay, () {
-        // Sau 5 giây, kiểm tra lại: Nếu nguy hiểm vẫn còn và vẫn đang ở trạng thái xác nhận
-        if (_currentAlerts.isNotEmpty && _isAcknowledged) {
-          _isAcknowledged = false; // Reset trạng thái xác nhận (tái cảnh báo)
-          _reAlertTimer = null;
-          notifyListeners(); // Kích hoạt UI hiện lại
-        }
-      });
-    }
-  }
-
-  // Hàm quan trọng: Cập nhật danh sách cảnh báo (được gọi từ nơi nhận dữ liệu sensor)
-  void updateAlerts(List<String> newAlertMessages) {
+  // ===============================================================
+  // CẬP NHẬT DỮ LIỆU CẢNH BÁO (TỪ ROOM PROVIDER)
+  // ===============================================================
+  void updateAlerts(List<Map<String, String>> newAlertsData) {
+    final newAlertMessages =
+        newAlertsData.map((e) => e['message'] ?? '').toList();
     final int newAlertsHash = newAlertMessages.fold(
       0,
       (hash, message) => hash ^ message.hashCode,
@@ -75,53 +51,81 @@ class AlertProvider extends ChangeNotifier {
     if (newAlertsHash != _currentAlertMessagesHash) {
       _currentAlertMessagesHash = newAlertsHash;
 
-      if (newAlertMessages.isNotEmpty) {
-        // NGUY HIỂM XUẤT HIỆN/THAY ĐỔI
+      if (newAlertsData.isNotEmpty) {
         List<AlertInfo> updatedList = [];
 
-        for (var message in newAlertMessages) {
+        for (var alert in newAlertsData) {
+          final message = alert['message'] ?? '';
+          final roomId = alert['roomId'] ?? '';
+
           final existingAlert = _currentAlerts.cast<AlertInfo?>().firstWhere(
-            (a) => a != null && a.message == message,
+            (a) => a != null && a.message == message && a.roomId == roomId,
             orElse: () => null,
           );
 
           if (existingAlert != null) {
             updatedList.add(existingAlert);
           } else {
-            updatedList.add(AlertInfo(message: message));
+            updatedList.add(AlertInfo(roomId: roomId, message: message));
           }
         }
 
         _currentAlerts = updatedList;
-        // Quan trọng: RESET trạng thái xác nhận vì đây là một tình trạng nguy hiểm MỚI
-        _isAcknowledged = false;
-        _reAlertTimer?.cancel(); // Hủy Timer nếu có cảnh báo mới/khác biệt
       } else {
-        // NGUY HIỂM ĐÃ HOÀN TOÀN BIẾN MẤT
         _currentAlerts = [];
-        _isAcknowledged = false; // Reset
-        _reAlertTimer?.cancel(); // Hủy Timer
       }
 
       notifyListeners();
     }
-    // Nếu hash KHÔNG thay đổi và alerts vẫn active, Timer sẽ lo việc tái cảnh báo.
   }
 
-  // Hàm xóa tất cả cảnh báo (khi người dùng nhấn nút)
-  void clearAlerts() {
-    if (_currentAlerts.isNotEmpty) {
-      // Đánh dấu cảnh báo hiện tại là đã được xác nhận (Acknowledged).
-      _isAcknowledged = true;
-      _startReAlertTimer(); // Bắt đầu đếm ngược 5 giây
+  // ===============================================================
+  // XÁC NHẬN CẢNH BÁO RIÊNG THEO NGƯỜI DÙNG
+  // ===============================================================
+  void acknowledgeAlertsForUser(String userId) {
+    _userAcknowledgements[userId] = DateTime.now();
+    notifyListeners();
+
+    // Sau 30 giây, cảnh báo tự động hiện lại cho user đó
+    Timer(_reAlertDelay, () {
+      _userAcknowledgements.remove(userId);
       notifyListeners();
-    }
+    });
   }
 
-  // Quan trọng: Hủy Timer khi Provider bị loại bỏ để tránh rò rỉ bộ nhớ
+  // ===============================================================
+  // KIỂM TRA USER NÀY CÓ NÊN THẤY CẢNH BÁO KHÔNG
+  // ===============================================================
+  bool shouldShowAlertsForUser(String userId) {
+    if (!_userAcknowledgements.containsKey(userId)) return true;
+    final elapsed = DateTime.now().difference(_userAcknowledgements[userId]!);
+    return elapsed > _reAlertDelay;
+  }
+
+  // ===============================================================
+  // LỌC CẢNH BÁO THEO QUYỀN CỦA USER
+  // ===============================================================
+  List<AlertInfo> getAlertsForUser(UserProfile user) {
+    List<AlertInfo> alerts;
+
+    if (user.role == UserRole.landlord) {
+      alerts = _currentAlerts;
+    } else {
+      alerts = _currentAlerts
+          .where((alert) => alert.roomId == user.roomId)
+          .toList();
+    }
+
+    // Nếu user vừa xác nhận trong vòng 30s thì ẩn cảnh báo của họ
+    if (!shouldShowAlertsForUser(user.id)) {
+      return [];
+    }
+
+    return alerts;
+  }
+
   @override
   void dispose() {
-    _reAlertTimer?.cancel();
     super.dispose();
   }
 }
